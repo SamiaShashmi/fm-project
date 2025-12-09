@@ -1,2 +1,5 @@
 *.h5ad
 *.gz
+*.pt
+__pycache__/
+*.pyc
