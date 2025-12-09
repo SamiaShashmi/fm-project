@@ -1,4 +1,2 @@
 *.h5ad
 *.gz
-data/HuMEC.h5ad
-data/post_adata_annotated.h5ad
