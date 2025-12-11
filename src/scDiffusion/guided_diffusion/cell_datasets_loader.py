@@ -9,17 +9,8 @@ from torch.utils.data import DataLoader, Dataset
 import scanpy as sc
 import torch
 import sys
-import os
-# Get the parent directory of the current file's directory
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-try:
-    from VAE.VAE_model import VAE
-except ImportError:
-    # Alternative import path if above fails
-    sys.path.append(os.path.dirname(parent_dir))
-    from src.scDiffusion.VAE.VAE_model import VAE
+sys.path.append('..')
+from VAE.VAE_model import VAE
 from sklearn.preprocessing import LabelEncoder
 
 def stabilize(expression_matrix):
@@ -85,7 +76,10 @@ def load_data(
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata)
 
-    cell_data = adata.X.toarray().astype(np.float32)
+    if hasattr(adata.X, 'toarray'):
+        cell_data = adata.X.toarray().astype(np.float32)
+    else:
+        cell_data = adata.X.astype(np.float32)
 
     # turn the gene expression into latent space. use this if training the diffusion backbone.
     if not train_vae:

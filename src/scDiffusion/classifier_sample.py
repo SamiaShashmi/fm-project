@@ -36,8 +36,14 @@ def load_VAE(ae_dir, num_gene):
     return autoencoder
 
 def save_data(all_cells, traj, data_dir):
+    import os
+    # Ensure the directory exists
+    dir_path = os.path.dirname(data_dir)
+    if dir_path and not os.path.exists(dir_path):
+        os.makedirs(dir_path, exist_ok=True)
     cell_gen = all_cells
     np.savez(data_dir, cell_gen=cell_gen)
+    print(f"Saved {all_cells.shape[0]} cells to {data_dir}.npz")
     return
 
 def main(cell_type=[0], multi=False, inter=False, weight=[10,10]):
@@ -182,8 +188,13 @@ def main(cell_type=[0], multi=False, inter=False, weight=[10,10]):
         if inter:
             celltype = ori_adata.obs['period'].cat.categories.tolist()[cell_type[0]]
             adata = ori_adata[ori_adata.obs['period']==celltype].copy()
-
+            
+            # The data is already normalized and log-transformed from lines 154-155
             start_x = adata.X
+            # Convert sparse matrix to dense if needed
+            if hasattr(start_x, 'toarray'):
+                start_x = start_x.toarray()
+            start_x = start_x.astype(np.float32)
             autoencoder = load_VAE(args.ae_dir, args.num_gene)
             start_x = autoencoder(torch.tensor(start_x,device=dist_util.dev()),return_latent=True).detach().cpu().numpy()
 
@@ -234,8 +245,13 @@ def main(cell_type=[0], multi=False, inter=False, weight=[10,10]):
                 noise = None,
             )
 
-        gathered_samples = [th.zeros_like(sample) for _ in range(dist.get_world_size())]
-        dist.all_gather(gathered_samples, sample)  # gather not supported with NCCL
+        # Handle both distributed and single GPU modes
+        if dist.is_initialized():
+            gathered_samples = [th.zeros_like(sample) for _ in range(dist.get_world_size())]
+            dist.all_gather(gathered_samples, sample)  # gather not supported with NCCL
+        else:
+            # Single GPU mode - just use the sample directly
+            gathered_samples = [sample]
         if args.filter:
             for sample in gathered_samples:
                 if multi:
@@ -272,7 +288,8 @@ def main(cell_type=[0], multi=False, inter=False, weight=[10,10]):
     arr = np.concatenate(all_cell, axis=0)
     save_data(arr, traj, args.sample_dir+str(cell_type[0]))
 
-    dist.barrier()
+    if dist.is_initialized():
+        dist.barrier()
     logger.log("sampling complete")
 
 
@@ -280,14 +297,14 @@ def create_argparser(celltype=[0], weight=[10,10]):
     defaults = dict(
         clip_denoised=True,
         num_samples=200,
-        batch_size=3000,
+        batch_size=128,
         use_ddim=False,
         class_cond=False, 
 
-        model_path="../models/scdiff/emt/diffusion/model020000.pt", 
+        model_path="../models/scdiff/thy/diffusion/model020000.pt", 
 
         # ***if commen conditional generation & gradiante interpolation, use this path***
-        classifier_path="../models/scdiff/emt/classifier/model009999.pt",
+        classifier_path="../models/scdiff/thy/classifier/model009999.pt",
         # ***if multi-conditional, use this path. replace this to your own classifiers***
         classifier_path1="output/classifier_checkpoint/classifier_muris_ood_type/model200000.pt",
         classifier_path2="output/classifier_checkpoint/classifier_muris_ood_organ/model200000.pt",
@@ -298,23 +315,23 @@ def create_argparser(celltype=[0], weight=[10,10]):
         classifier_scale=2,
         # ***in multi-conditional, use this scale. scale1 and scale2 are the weights of two classifiers***
         # ***in Gradient Interpolation, use this scale, too. scale1 and scale2 are the weights of two gradients***
-        classifier_scale1=weight[0]*2/10,
-        classifier_scale2=weight[1]*2/10,
+        classifier_scale1=weight[0]*5/10,  # Scale to 0-5 range for stronger guidance
+        classifier_scale2=weight[1]*5/10,  # Scale to 0-5 range for stronger guidance
 
         # ***if gradient interpolation, replace these base on your own situation***
-        ae_dir='../models/scdiff/emt/VAE/model_seed=0_step=199999.pt', 
+        ae_dir='../models/scdiff/thy/VAE/model_seed=0_step=199999.pt', 
         num_gene=2000,
-        init_time = 400,    # initial noised state if interpolation
-        init_cell_path = '../data/emt_diff.h5ad',   #input initial noised cell state
+        init_time=50,  # Reduced from 600 to stay closer to data manifold
+        init_cell_path = '../data/thy_diff.h5ad',   #input initial noised cell state
 
-        sample_dir=f"../data",
+        sample_dir=f"../data/generated/interpolation_",
         start_guide_steps = 0,     # the time to use classifier guidance
         filter = False,   # filter the simulated cells that are classified into other condition, might take long time
 
     )
     defaults.update(model_and_diffusion_defaults())
     defaults.update(classifier_and_diffusion_defaults())
-    defaults['num_class']=2
+    defaults['num_class']=3
     parser = argparse.ArgumentParser()
     add_dict_to_argparser(parser, defaults)
     return parser
@@ -333,7 +350,8 @@ if __name__ == "__main__":
     #         main(cell_type=[i,j],multi=True)
 
     # ***for Gradient Interpolation, run***
-    for i in range(0,11):
-        main(cell_type=[0,1], inter=True, weight=[10-i,i])
+    # for i in range(0,11):
+    i = 0
+    main(cell_type=[0,2], inter=True, weight=[5,5])
     # for i in range(18):
         # main(cell_type=[i,i+1], inter=True, weight=[5,5])
