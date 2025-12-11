@@ -3,3 +3,9 @@
 *.pt
 __pycache__/
 *.pyc
+*.bin
+*.ckpt
+*tsv
+*.json
+*.csv
+*.txt
