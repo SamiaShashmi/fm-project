@@ -53,6 +53,8 @@ class scNODE(nn.Module):
             first_tp_data = first_tp_data[cell_idx, :]
         # Map data at the first timepoint to the VAE latent space
         first_latent_mu, first_latent_std = self.latent_encoder(first_tp_data)
+        # Clamp std to prevent numerical issues with Normal distribution
+        first_latent_std = torch.clamp(first_latent_std, min=1e-4)
         first_latent_dist = dist.Normal(first_latent_mu, first_latent_std)
         first_latent_sample = self._sampleGaussian(first_latent_mu, first_latent_std)
         # Predict forward with ODE solver in the latent space
@@ -72,6 +74,8 @@ class scNODE(nn.Module):
                  It has the shape of (# cells, # tps, # genes)
         '''
         first_latent_mean, first_latent_std = self.latent_encoder(first_tp_data)
+        # Clamp std to prevent numerical issues
+        first_latent_std = torch.clamp(first_latent_std, min=1e-4)
         repeat_times = (n_cells // first_latent_mean.shape[0]) + 1
         repeat_mean = torch.repeat_interleave(first_latent_mean, repeat_times, dim=0)[:n_cells, :]
         repeat_std = torch.repeat_interleave(first_latent_std, repeat_times, dim=0)[:n_cells, :]
@@ -108,6 +112,8 @@ class scNODE(nn.Module):
                 t_data = t_data.to(device=device, dtype=torch.float32)
 
             latent_mean, latent_std = self.latent_encoder(t_data)
+            # Clamp std to prevent numerical issues
+            latent_std = torch.clamp(latent_std, min=1e-4)
             latent_sample = self._sampleGaussian(latent_mean, latent_std)
             recon_obs = self.obs_decoder(latent_sample)
 

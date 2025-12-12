@@ -104,7 +104,8 @@ class LinearVAENet(nn.Module):
     def forward(self, data):
         out = self.net(data)
         mu = self.mu_layer(out)
-        std = torch.abs(self.var_layer(out)) # avoid incompatible std values
+        # Add epsilon to ensure std is never too close to zero for numerical stability
+        std = torch.abs(self.var_layer(out)) + 1e-4  # avoid incompatible std values
         return mu, std
 
 

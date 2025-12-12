@@ -302,10 +302,10 @@ def create_argparser(celltype=[0], weight=[10,10]):
         use_ddim=False,
         class_cond=False, 
 
-        model_path="../models/scdiff/emt/diffusion/model020000.pt", 
+        model_path="../models/scdiff/thy/diffusion/model020000.pt", 
 
         # ***if commen conditional generation & gradiante interpolation, use this path***
-        classifier_path="../models/scdiff/emt/classifier/model009999.pt",
+        classifier_path="../models/scdiff/thy/classifier/model009999.pt",
         # ***if multi-conditional, use this path. replace this to your own classifiers***
         classifier_path1="output/classifier_checkpoint/classifier_muris_ood_type/model200000.pt",
         classifier_path2="output/classifier_checkpoint/classifier_muris_ood_organ/model200000.pt",
@@ -320,10 +320,10 @@ def create_argparser(celltype=[0], weight=[10,10]):
         classifier_scale2=weight[1]*2/10,  # Scale to 0-5 range for stronger guidance
 
         # ***if gradient interpolation, replace these base on your own situation***
-        ae_dir='../models/scdiff/emt/VAE/model_seed=0_step=199999.pt', 
+        ae_dir='../models/scdiff/thy/VAE/model_seed=0_step=199999.pt', 
         num_gene=2000,
         init_time=100,  # Reduced from 600 to stay closer to data manifold
-        init_cell_path = '../data/emt_diff.h5ad',   #input initial noised cell state
+        init_cell_path = '../data/thy_diff.h5ad',   #input initial noised cell state
 
         sample_dir=f"../data/generated/interpolation_",
         start_guide_steps = 0,     # the time to use classifier guidance
@@ -332,7 +332,7 @@ def create_argparser(celltype=[0], weight=[10,10]):
     )
     defaults.update(model_and_diffusion_defaults())
     defaults.update(classifier_and_diffusion_defaults())
-    defaults['num_class']=2
+    defaults['num_class']=3
     parser = argparse.ArgumentParser()
     add_dict_to_argparser(parser, defaults)
     return parser
@@ -352,6 +352,6 @@ if __name__ == "__main__":
 
     # ***for Gradient Interpolation, run***
     for i in range(0,11):
-        main(cell_type=[0,1], inter=True, weight=[10-i,i], step=i)
+        main(cell_type=[0,2], inter=True, weight=[10-i,i], step=i)
     # for i in range(18):
         # main(cell_type=[i,i+1], inter=True, weight=[5,5])
