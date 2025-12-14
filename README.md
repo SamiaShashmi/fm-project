@@ -23,6 +23,13 @@ Jupyter notebooks for preprocessing data and running different models:
 - `hematopoiesis_preprocess.ipynb` - Hematopoiesis dataset preprocessing  
 - `thymocyte_preprocess.ipynb` - Thymocyte dataset preprocessing
 
+**Model Experiments:**
+
+Each model has dedicated notebooks for each dataset:
+- **scNODE**: `scnode_[dataset].ipynb` - Neural ODE-based generative model
+- **scDiffusion**: `scdiff_[dataset].ipynb` - Diffusion model for cell generation
+- **scGPT**: `scgpt_[dataset].ipynb` - GPT-based foundation model
+- **scVI**: `scvi_[dataset].ipynb` - Variational inference model
 
 ### 💻 `src/` - Source Code Implementations
 Contains the implementation of two main models:
@@ -41,4 +48,5 @@ Helper functions for data processing and evaluation:
 - `evaluation.py` - Evaluation metrics including marker gene monotonicity
 - `latent.py` - Latent space analysis utilities
 - `plot.py` - Plotting utilities
+
 
