@@ -29,7 +29,6 @@ Contains the implementation of two main models:
 
 #### `src/scNODE/` - Neural ODE Model Implementation
 Cloned from https://github.com/rsinghlab/scNODE
-Generative model for temporal single-cell transcriptomic data prediction:
 
 
 #### `src/scDiffusion/` - Diffusion Model Implementation
